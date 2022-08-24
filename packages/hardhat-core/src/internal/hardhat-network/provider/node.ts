@@ -11,7 +11,11 @@ import Bloom from "@ethereumjs/vm/dist/bloom";
 import { EVMResult, ExecResult } from "@ethereumjs/vm/dist/evm/evm";
 import { ERROR } from "@ethereumjs/vm/dist/exceptions";
 import { RunBlockResult } from "@ethereumjs/vm/dist/runBlock";
-import { DefaultStateManager, StateManager } from "@ethereumjs/vm/dist/state";
+import {
+  DefaultStateManager,
+  Proof,
+  StateManager,
+} from "@ethereumjs/vm/dist/state";
 import { SignTypedDataVersion, signTypedData } from "@metamask/eth-sig-util";
 import chalk from "chalk";
 import debug from "debug";
@@ -40,6 +44,7 @@ import {
   InternalError,
   InvalidArgumentsError,
   InvalidInputError,
+  MethodNotSupportedError,
   TransactionExecutionError,
 } from "../../core/providers/errors";
 import { Reporter } from "../../sentry/reporter";
@@ -811,6 +816,24 @@ Hardhat Network's forking functionality only works with blocks from at least spu
 
   public getCoinbaseAddress(): Address {
     return Address.fromString(this._coinbase);
+  }
+
+  public async getProof(
+    address: Address,
+    storageSlots: BN[],
+    blockNumberOrPending: BN | "pending"
+  ): Promise<Proof> {
+    return this._runInBlockContext(blockNumberOrPending, async () => {
+      if (this._stateManager.getProof === undefined) {
+        throw new MethodNotSupportedError(
+          `missing @ethereumjs/vm getProof implementation`
+        );
+      }
+      return this._stateManager.getProof(
+        address,
+        storageSlots.map((s) => s.toArrayLike(Buffer, "be", 32))
+      );
+    });
   }
 
   public async getStorageAt(

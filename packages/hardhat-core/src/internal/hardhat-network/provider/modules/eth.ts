@@ -16,6 +16,7 @@ import {
 import * as t from "io-ts";
 import cloneDeep from "lodash/cloneDeep";
 
+import { Proof } from "@ethereumjs/vm/dist/state";
 import { BoundExperimentalHardhatNetworkMessageTraceHook } from "../../../../types";
 import { RpcAccessList } from "../../../core/jsonrpc/types/access-list";
 import {
@@ -27,6 +28,7 @@ import {
   rpcHash,
   rpcQuantity,
   rpcStorageSlot,
+  rpcStorageSlotArray,
 } from "../../../core/jsonrpc/types/base-types";
 import {
   optionalRpcNewBlockTag,
@@ -179,7 +181,7 @@ export class EthModule {
         return this._getLogsAction(...this._getLogsParams(params));
 
       case "eth_getProof":
-        throw new MethodNotSupportedError(method);
+        return this._getProofAction(...this._getProofParams(params));
 
       case "eth_getStorageAt":
         return this._getStorageAtAction(...this._getStorageAtParams(params));
@@ -686,6 +688,30 @@ export class EthModule {
   }
 
   // eth_getProof
+
+  private _getProofParams(
+    params: any[]
+  ): [Buffer, BN[], OptionalRpcNewBlockTag] {
+    return validateParams(
+      params,
+      rpcAddress,
+      rpcStorageSlotArray,
+      optionalRpcNewBlockTag
+    );
+  }
+
+  private async _getProofAction(
+    address: Buffer,
+    storageSlots: BN[],
+    blockTag: OptionalRpcNewBlockTag
+  ): Promise<Proof> {
+    const blockNumberOrPending = await this._resolveNewBlockTag(blockTag);
+    return this._node.getProof(
+      new Address(address),
+      storageSlots,
+      blockNumberOrPending
+    );
+  }
 
   // eth_getStorageAt
 

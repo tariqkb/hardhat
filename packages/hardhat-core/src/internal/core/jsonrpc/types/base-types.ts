@@ -64,6 +64,8 @@ function validateStorageSlot(u: unknown, c: t.Context): t.Validation<BN> {
   return t.success(new BN(toBuffer(u)));
 }
 
+export const rpcStorageSlotArray = t.array(rpcStorageSlot);
+
 export const rpcAddress = new t.Type<Buffer>(
   "ADDRESS",
   (v): v is Buffer => Buffer.isBuffer(v) && v.length === ADDRESS_LENGTH_BYTES,
